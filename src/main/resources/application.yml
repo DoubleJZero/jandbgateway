@@ -11,11 +11,15 @@ spring:
           uri: lb://BOARD-SERVICE
           predicates:
             - Path=/board-service/**
+          filters:
+            - AuthorizationHeaderFilter
 
         - id: user-service
           uri: lb://USER-SERVICE
           predicates:
             - Path=/user-service/**
+          filters:
+            - AuthorizationHeaderFilter
 
 eureka:
   instance:
@@ -25,3 +29,6 @@ eureka:
     fetch-registry: true
     serviceUrl:
       defaultZone: http://localhost:8761/eureka
+
+token:
+  secret: s1kfktAkfTkal4Ebdrbrdpekfadktjfhtkaktel3dks9lgkfTpdlfjswjscifhghfQodltu7eh
