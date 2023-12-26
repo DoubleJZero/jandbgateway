@@ -12,6 +12,7 @@ targetCompatibility = '11'
 
 repositories {
 	mavenCentral()
+	maven{ url 'https://jitpack.io' }
 }
 
 dependencies {
@@ -22,6 +23,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-actuator'
 	//Eureka
 	implementation 'org.springframework.cloud:spring-cloud-starter-netflix-eureka-client'
+
+	//custom core 추가
+	implementation 'com.github.DoubleJZero:msacore:0.1.5'
 
 	//Lombok
 	compileOnly 'org.projectlombok:lombok'

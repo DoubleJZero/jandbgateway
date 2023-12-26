@@ -1,9 +1,14 @@
 package jandbgateway.filter;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import msacore.payload.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cloud.gateway.filter.GatewayFilter;
 import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.core.io.buffer.DefaultDataBufferFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -12,6 +17,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
+import java.util.Map;
 import java.util.Objects;
 
 @Component
@@ -39,13 +45,17 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
 
             HttpHeaders headers = request.getHeaders();
             if (!headers.containsKey(HttpHeaders.AUTHORIZATION)) {
-                return onError(exchange, "No authorization header");
+                try {
+                    return onError(exchange, "No authorization header");
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             String authorizationHeader = Objects.requireNonNull(headers.get(HttpHeaders.AUTHORIZATION)).get(0);
 
             // JWT 토큰 판별
-            String token = authorizationHeader.replace("Bearer", "");
+            String token = authorizationHeader.replace("Bearer", "").trim();
 
             jwtTokenProvider.validateJwtToken(token);
 
@@ -54,7 +64,11 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
             if (subject.equals("feign")) return chain.filter(exchange);
 
             if (!jwtTokenProvider.getRoles(token).contains("USER")) {
-                return onError(exchange, "권한 없음");
+                try {
+                    return onError(exchange, "권한 없음");
+                } catch (JsonProcessingException e) {
+                    throw new RuntimeException(e);
+                }
             }
 
             ServerHttpRequest newRequest = request.mutate()
@@ -66,12 +80,11 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
     }
 
     // Mono(단일 값), Flux(다중 값) -> Spring WebFlux
-    private Mono<Void> onError(ServerWebExchange exchange, String errorMsg) {
+    private Mono<Void> onError(ServerWebExchange exchange, String errorMsg) throws JsonProcessingException {
+        log.error("######################################################");
         log.error(errorMsg);
+        log.error("######################################################");
 
-        ServerHttpResponse response = exchange.getResponse();
-        response.setStatusCode(HttpStatus.UNAUTHORIZED);
-
-        return response.setComplete();
+        return exchange.getResponse().writeWith(Mono.just(new DefaultDataBufferFactory().wrap(new ObjectMapper().writeValueAsBytes(Map.of("status",String.valueOf(HttpStatus.UNAUTHORIZED.value()), "message", HttpStatus.UNAUTHORIZED.toString(),"code",HttpStatus.UNAUTHORIZED.name())))));
     }
 }
