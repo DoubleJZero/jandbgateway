@@ -48,7 +48,7 @@ public class AuthorizationHeaderFilter extends AbstractGatewayFilterFactory<Auth
             ServerHttpRequest request = exchange.getRequest();
             String path = request.getPath().toString();
 
-            if("/user-service/login".equals(path)) return chain.filter(exchange);
+            if("/user-service/login".equals(path) || path.contains("/v1/feign")) return chain.filter(exchange);
 
             HttpHeaders headers = request.getHeaders();
             if (!headers.containsKey(HttpHeaders.AUTHORIZATION)) {
