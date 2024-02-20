@@ -9,7 +9,9 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import java.security.Key;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * JwtTokenProvider
@@ -48,7 +50,7 @@ public class JwtTokenProvider {
     }
 
     public List<String> getRoles(String token) {
-        return (List<String>) getClaimsFromJwtToken(token).get("roles");
+        return Arrays.stream(getClaimsFromJwtToken(token).get("roles").toString().split(",")).collect(Collectors.toList());
     }
 
     public void validateJwtToken(String token) {
